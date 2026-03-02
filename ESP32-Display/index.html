@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Yuki's ESP32 Emulator</title>
+    <style>
+        body { background: #1a1a1a; display: flex; justify-content: center; align-items: center; height: 100vh; color: #eee; font-family: sans-serif; }
+        .case { background: #333; padding: 20px; border-radius: 15px; border: 4px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        canvas { background: #000; border: 2px solid #000; display: block; image-rendering: pixelated; }
+        .label { text-align: center; margin-top: 10px; font-weight: bold; color: #888; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+
+<div class="case">
+    <canvas id="espDisplay" width="320" height="170"></canvas>
+    <div class="label">ESP32 DISPLAY</div>
+</div>
+
+<script>
+class ESP32Emulator {
+    constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.posX = 0;
+        this.posY = 0;
+        this.fontSize = 1;
+        this.fgColor = "#FFFFFF";
+        this.bgColor = "#000000";
+    }
+
+    // Convert 16-bit Hex (0xFFFF) to CSS RGB
+    _hexToRGB(hex) {
+        // Simple conversion for common 16-bit patterns or standard hex
+        let r = ((hex >> 11) & 0x1F) * 8;
+        let g = ((hex >> 5) & 0x3F) * 4;
+        let b = (hex & 0x1F) * 8;
+        return `rgb(${r},${g},${b})`;
+    }
+
+    setBG(hex) {
+        this.bgColor = this._hexToRGB(hex);
+        this.ctx.fillStyle = this.bgColor;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    setFG(hex) {
+        this.fgColor = this._hexToRGB(hex);
+    }
+
+    cursor(x, y) {
+        this.posX = x;
+        this.posY = y;
+    }
+
+    // Map size 1, 2, 3 to actual pixel sizes
+    size(s) {
+        this.fontSize = s * 12; // Base size multiplier
+    }
+
+    text(string) {
+        this.ctx.fillStyle = this.fgColor;
+        this.ctx.font = `${this.fontSize}px serif`;
+        this.ctx.textBaseline = "top";
+        this.ctx.fillText(string, this.posX, this.posY);
+    }
+}
+
+const display = new ESP32Emulator('espDisplay');
+
+display.setBG(0xFFFF); // Black
+display.setFG(0x0000); // White
+
+display.size(2);
+display.cursor(10, 40);
+display.text("Welcome To");
+
+display.size(3);
+display.cursor(10, 70);
+display.text("Project GIZMO");
+
+display.size(1);
+display.cursor(235, 155);
+display.text("By Schediazo");
+
+
+</script>
+</body>
+</html>
