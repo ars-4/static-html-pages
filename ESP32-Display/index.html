@@ -1,89 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Yuki's ESP32 Emulator</title>
+    <title>Yuki's ESP32 Shape Studio</title>
     <style>
-        body { background: #1a1a1a; display: flex; justify-content: center; align-items: center; height: 100vh; color: #eee; font-family: sans-serif; }
-        .case { background: #333; padding: 20px; border-radius: 15px; border: 4px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        canvas { background: #000; border: 2px solid #000; display: block; image-rendering: pixelated; }
-        .label { text-align: center; margin-top: 10px; font-weight: bold; color: #888; letter-spacing: 2px; }
+        body {
+            background: #121212;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            font-family: 'Consolas', monospace;
+            color: #eee;
+            overflow: hidden;
+        }
+
+        #editor-side {
+            flex: 1.2;
+            padding: 20px;
+            background: #1a1a1a;
+            border-right: 2px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #preview-side {
+            flex: 0.8;
+            display: flex;
+            flex-direction: column;
+            background: #121212;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        textarea {
+            flex: 1;
+            background: #1e1e1e;
+            color: #50fa7b;
+            border: 1px solid #333;
+            padding: 15px;
+            font-size: 13px;
+            outline: none;
+            resize: none;
+            border-radius: 5px;
+            line-height: 1.5;
+        }
+
+        .controls {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        button {
+            background: #ff79c6;
+            border: none;
+            padding: 10px 15px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        select {
+            background: #333;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .case {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 15px;
+            border: 4px solid #444;
+            align-self: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        canvas {
+            background: #000;
+            border: 2px solid #111;
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        #output-arduino {
+            background: #000;
+            color: #f8f8f2;
+            border: 1px dashed #6272a4;
+            padding: 15px;
+            font-size: 11px;
+            white-space: pre;
+            border-radius: 5px;
+            margin-top: 10px;
+            height: 200px;
+            overflow-y: auto;
+        }
+
+        .label {
+            color: #bd93f9;
+            font-size: 12px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="case">
-    <canvas id="espDisplay" width="320" height="170"></canvas>
-    <div class="label">ESP32 DISPLAY</div>
-</div>
-
-<script>
-class ESP32Emulator {
-    constructor(canvasId) {
-        this.canvas = document.getElementById(canvasId);
-        this.ctx = this.canvas.getContext('2d');
-        this.posX = 0;
-        this.posY = 0;
-        this.fontSize = 1;
-        this.fgColor = "#FFFFFF";
-        this.bgColor = "#000000";
-    }
-
-    // Convert 16-bit Hex (0xFFFF) to CSS RGB
-    _hexToRGB(hex) {
-        // Simple conversion for common 16-bit patterns or standard hex
-        let r = ((hex >> 11) & 0x1F) * 8;
-        let g = ((hex >> 5) & 0x3F) * 4;
-        let b = (hex & 0x1F) * 8;
-        return `rgb(${r},${g},${b})`;
-    }
-
-    setBG(hex) {
-        this.bgColor = this._hexToRGB(hex);
-        this.ctx.fillStyle = this.bgColor;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-
-    setFG(hex) {
-        this.fgColor = this._hexToRGB(hex);
-    }
-
-    cursor(x, y) {
-        this.posX = x;
-        this.posY = y;
-    }
-
-    // Map size 1, 2, 3 to actual pixel sizes
-    size(s) {
-        this.fontSize = s * 12; // Base size multiplier
-    }
-
-    text(string) {
-        this.ctx.fillStyle = this.fgColor;
-        this.ctx.font = `${this.fontSize}px serif`;
-        this.ctx.textBaseline = "top";
-        this.ctx.fillText(string, this.posX, this.posY);
-    }
+    <div id="editor-side">
+        <div class="label">ESP32 Display</div>
+        <textarea id="codeEditor" spellcheck="false">
+async function setup() {
+    display.setBG(0x0000);
 }
 
-const display = new ESP32Emulator('espDisplay');
+async function loop() {
+    display.setBG(0x0000);
+    
+    // Draw a blue hollow rectangle
+    display.rect(20, 20, 100, 50, 0x001F);
+    
+    // Draw a red filled circle
+    display.fillCircle(200, 80, 30, 0xF800);
+    
+    await delay(1000);
 
-display.setBG(0xFFFF); // Black
-display.setFG(0x0000); // White
+    // Draw a green triangle
+    display.fillTriangle(50, 150, 10, 100, 90, 100, 0x07E0);
+    
+    display.setFG(0xFFFF);
+    display.size(2);
+    display.cursor(130, 20);
+    display.text("SHAPES READY");
+    await delay(1000);
+}</textarea>
+        <div class="controls">
+            <button onclick="exportToArduino()">EXPORT C++</button>
+            <select id="resSelect" onchange="updateRes()">
+                <option value="320,170">320x170 (ST7789)</option>
+                <option value="240,240">240x240 (Round)</option>
+                <option value="128,64">128x64 (OLED)</option>
+            </select>
+        </div>
+    </div>
 
-display.size(2);
-display.cursor(10, 40);
-display.text("Welcome To");
+    <div id="preview-side">
+        <div class="case">
+            <canvas id="espDisplay" width="320" height="170"></canvas>
+        </div>
+        <div class="label" style="margin-top:20px;">ARDUINO_GFX CODE</div>
+        <div id="output-arduino">// Generated code...</div>
+    </div>
 
-display.size(3);
-display.cursor(10, 70);
-display.text("Project GIZMO");
+    <script>
+        class ESP32Emulator {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.reset();
+            }
+            reset() { this.posX = 0; this.posY = 0; this.fontSize = 12; this.fgColor = "#FFF"; }
+            _hexToRGB(hex) {
+                let r = ((hex >> 11) & 0x1f) << 3;
+                let g = ((hex >> 5) & 0x3f) << 2;
+                let b = (hex & 0x1f) << 3;
+                return `rgb(${r},${g},${b})`;
+            }
+            setBG(hex) { this.ctx.fillStyle = this._hexToRGB(hex); this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height); }
+            setFG(hex) { this.fgColor = this._hexToRGB(hex); }
+            cursor(x, y) { this.posX = x; this.posY = y; }
+            size(s) { this.fontSize = s * 10; }
+            text(t) { this.ctx.fillStyle = this.fgColor; this.ctx.font = `${this.fontSize}px serif`; this.ctx.fillText(t, this.posX, this.posY + this.fontSize); }
 
-display.size(1);
-display.cursor(235, 155);
-display.text("By Schediazo");
+            rect(x, y, w, h, color) { this.ctx.strokeStyle = this._hexToRGB(color); this.ctx.strokeRect(x, y, w, h); }
+            fillRect(x, y, w, h, color) { this.ctx.fillStyle = this._hexToRGB(color); this.ctx.fillRect(x, y, w, h); }
+            circle(x, y, r, color) { this.ctx.strokeStyle = this._hexToRGB(color); this.ctx.beginPath(); this.ctx.arc(x, y, r, 0, Math.PI * 2); this.ctx.stroke(); }
+            fillCircle(x, y, r, color) { this.ctx.fillStyle = this._hexToRGB(color); this.ctx.beginPath(); this.ctx.arc(x, y, r, 0, Math.PI * 2); this.ctx.fill(); }
+            fillTriangle(x1, y1, x2, y2, x3, y3, color) {
+                this.ctx.fillStyle = this._hexToRGB(color);
+                this.ctx.beginPath(); this.ctx.moveTo(x1, y1); this.ctx.lineTo(x2, y2); this.ctx.lineTo(x3, y3); this.ctx.closePath(); this.ctx.fill();
+            }
+        }
 
+        const display = new ESP32Emulator('espDisplay');
+        const delay = (ms) => new Promise(res => setTimeout(res, ms));
+        let currentAbort = { abort: false };
 
-</script>
+        async function runSim() {
+            currentAbort.abort = true;
+            currentAbort = { abort: false };
+            const localAbort = currentAbort;
+
+            try {
+                const userCode = document.getElementById('codeEditor').value;
+                const factory = new Function('display', 'delay', `${userCode}\n return {setup, loop};`);
+                const { setup, loop } = factory(display, delay);
+                if (setup) await setup();
+                while (!localAbort.abort) {
+                    if (loop) await loop(); else break;
+                }
+            } catch (e) { }
+        }
+
+        function updateRes() {
+            const [w, h] = document.getElementById('resSelect').value.split(',').map(Number);
+            display.canvas.width = w; display.canvas.height = h;
+            runSim();
+        }
+
+        document.getElementById('codeEditor').addEventListener('input', runSim);
+        runSim();
+        document.getElementById('output-arduino').addEventListener('click', () => {
+            navigator.clipboard.writeText(document.getElementById('output-arduino').innerText);
+            document.getElementById('output-arduino').style.color = '#50fa7b';
+            setTimeout(() => document.getElementById('output-arduino').style.color = '#f8f8f2', 1000);
+            window.alert('Arduino code copied to clipboard!');
+        });
+
+        function exportToArduino() {
+            const raw = document.getElementById('codeEditor').value;
+            const [w, h] = document.getElementById('resSelect').value.split(',');
+
+            let cpp = raw
+                .replace(/async\s+function\s+setup\(\)\s*\{/g, `void setup() {\n  gfx->begin();\n  pinMode(14, OUTPUT);\n  digitalWrite(14, HIGH);`)
+                .replace(/async\s+function\s+loop\(\)/g, 'void loop()')
+                .replace(/await\s+delay/g, 'delay')
+                .replace(/display\.setBG\((.*?)\);/g, 'gfx->fillScreen($1);')
+                .replace(/display\.setFG\((.*?)\);/g, 'gfx->setTextColor($1);')
+                .replace(/display\.cursor\((.*?),\s*(.*?)\);/g, 'gfx->setCursor($1, $2);')
+                .replace(/display\.size\((.*?)\);/g, 'gfx->setTextSize($1);')
+                .replace(/display\.text\((.*?)\);/g, 'gfx->println($1);')
+                .replace(/display\.rect\(/g, 'gfx->drawRect(')
+                .replace(/display\.fillRect\(/g, 'gfx->fillRect(')
+                .replace(/display\.circle\(/g, 'gfx->drawCircle(')
+                .replace(/display\.fillCircle\(/g, 'gfx->fillCircle(')
+                .replace(/display\.fillTriangle\(/g, 'gfx->fillTriangle(');
+
+            document.getElementById('output-arduino').innerText = `#include <Arduino_GFX_Library.h>\n\n// Config for ${w}x${h}\n#define TFT_BL 14\nArduino_DataBus *bus = new Arduino_ESP32SPI(11, 10, 12, 13, -1);\nArduino_GFX *gfx = new Arduino_ST7789(bus, 1, 0, true, ${h}, ${w}, 35, 0, 35, 0);\n\n${cpp}`;
+        }
+    </script>
 </body>
+
 </html>
