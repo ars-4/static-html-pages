@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Coding Agent Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;700;800&display=swap');
+:root{--bg:#0a0a0f;--surface:#12121a;--card:#1a1a28;--border:#2a2a42;--accent:#5b6ef5;--accent2:#a78bfa;--green:#34d399;--text:#e2e2f0;--muted:#6b6b8a;--glow:rgba(91,110,245,0.15);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:.3;pointer-events:none;z-index:0;}
+.container{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:48px 24px;}
+.header{text-align:center;margin-bottom:48px;animation:fadeDown .6s ease both;}
+.badge{display:inline-block;background:var(--glow);border:1px solid var(--accent);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;padding:5px 14px;border-radius:100px;margin-bottom:20px;}
+h1{font-family:'Syne',sans-serif;font-size:clamp(28px,5vw,48px);font-weight:800;background:linear-gradient(135deg,#fff 0%,var(--accent2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.15;margin-bottom:12px;}
+.subtitle{color:var(--muted);font-size:13px;}
+.section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px;position:relative;overflow:hidden;animation:fadeUp .5s ease both;}
+.section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.4;}
+.section:nth-child(2){animation-delay:.1s}.section:nth-child(3){animation-delay:.2s}.section:nth-child(4){animation-delay:.3s}.section:nth-child(5){animation-delay:.4s}
+.stitle{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.stitle em{width:20px;height:20px;background:var(--glow);border:1px solid var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--accent);font-style:normal;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.ci{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s;user-select:none;}
+.ci:hover,.ci.on{border-color:var(--accent);background:var(--glow);}
+.cb{width:16px;height:16px;border:1.5px solid var(--muted);border-radius:4px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.ci.on .cb{background:var(--accent);border-color:var(--accent);}
+.cb::after{content:'';width:4px;height:7px;border:1.5px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px);opacity:0;transition:opacity .15s;}
+.ci.on .cb::after{opacity:1;}
+.cl{font-size:12px;}
+.ct{margin-left:auto;font-size:9px;padding:2px 6px;border-radius:4px;background:var(--border);color:var(--muted);}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;}
+.field input,.field select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus{border-color:var(--accent);}
+.field select option{background:var(--card);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:#fff;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:8px;}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(91,110,245,.4);}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.pw{display:none;margin-top:16px;}
+.pw.on{display:block;}
+.pbg{height:4px;background:var(--border);border-radius:100px;overflow:hidden;margin-bottom:8px;}
+.pf{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:100px;width:0%;transition:width .3s ease;}
+.pl{font-size:11px;color:var(--muted);text-align:center;}
+.tree{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-top:14px;max-height:220px;overflow-y:auto;}
+.ti{font-size:12px;line-height:1.8;display:flex;align-items:center;gap:6px;}
+.ti.d{color:var(--accent2);font-weight:600;}.ti.f{color:var(--text);}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.chip{font-size:11px;padding:4px 10px;border-radius:100px;background:var(--border);color:var(--muted);}
+.chip b{color:var(--accent2);}
+.sc{display:none;background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.3);border-radius:12px;padding:20px 24px;margin-top:16px;text-align:center;}
+.sc.on{display:block;}
+.si{font-size:32px;margin-bottom:8px;animation:pop .4s cubic-bezier(.34,1.56,.64,1);}
+.st{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--green);margin-bottom:4px;}
+.ss{font-size:11px;color:var(--muted);margin-bottom:16px;}
+.dl{display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#000;border:none;border-radius:10px;padding:12px 24px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+.dl:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(52,211,153,.35);}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--surface);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+
+<!-- ALL FILE CONTENTS stored as type="text/plain" — never parsed as JS -->
+
+<script type="text/plain" id="T_requirements">fastapi
+uvicorn
+httpx
+python-multipart
+psycopg2-binary
+pgvector
+python-dotenv
+numpy
+</script>
+
+<script type="text/plain" id="T_env">DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=%%DB%%
+DB_USER=%%USER%%
+DB_PASSWORD=your_password
+OLLAMA_URL=http://localhost:11434
+</script>
+
+<script type="text/plain" id="T_embeddings">import httpx
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+EMBED_MODEL = "%%EMBED%%"
+
+
+async def get_embedding(text: str) -> list[float]:
+    async with httpx.AsyncClient(timeout=60) as client:
+        r = await client.post(
+            f"{OLLAMA_URL}/api/embeddings",
+            json={"model": EMBED_MODEL, "prompt": text, "keep_alive": 0}
+        )
+        r.raise_for_status()
+        return r.json()["embedding"]
+
+
+def get_embedding_sync(text: str) -> list[float]:
+    with httpx.Client(timeout=60) as client:
+        r = client.post(
+            f"{OLLAMA_URL}/api/embeddings",
+            json={"model": EMBED_MODEL, "prompt": text, "keep_alive": 0}
+        )
+        r.raise_for_status()
+        return r.json()["embedding"]
+
+
+def chunk_code(content: str, chunk_size: int = 60, overlap: int = 10) -> list[str]:
+    lines = content.split("\n")
+    chunks = []
+    for i in range(0, len(lines), chunk_size - overlap):
+        chunk = "\n".join(lines[i:i + chunk_size])
+        if chunk.strip():
+            chunks.append(chunk)
+    return chunks
+</script>
+
+<script type="text/plain" id="T_style_memory">import os
+import psycopg2
+from pgvector.psycopg2 import register_vector
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+class StyleMemory:
+    def __init__(self):
+        self.conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "localhost"),
+            port=os.getenv("DB_PORT", 5432),
+            dbname=os.getenv("DB_NAME", "%%DB%%"),
+            user=os.getenv("DB_USER", "%%USER%%"),
+            password=os.getenv("DB_PASSWORD", ""),
+        )
+        register_vector(self.conn)
+        self._init_tables()
+
+    def _init_tables(self):
+        with self.conn.cursor() as cur:
+            cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS code_chunks (
+                    id SERIAL PRIMARY KEY,
+                    repo_name TEXT NOT NULL,
+                    file_path TEXT NOT NULL,
+                    language TEXT NOT NULL,
+                    chunk TEXT NOT NULL,
+                    embedding vector(384),
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS style_rules (
+                    id SERIAL PRIMARY KEY,
+                    repo_name TEXT NOT NULL,
+                    language TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    rule TEXT NOT NULL,
+                    example TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS scanned_repos (
+                    id SERIAL PRIMARY KEY,
+                    repo_path TEXT UNIQUE NOT NULL,
+                    repo_name TEXT NOT NULL,
+                    languages TEXT[],
+                    file_count INT DEFAULT 0,
+                    scanned_at TIMESTAMP DEFAULT NOW()
+                );
+            """)
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS chunks_emb_idx ON code_chunks
+                USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10);
+            """)
+            self.conn.commit()
+
+    def save_chunk(self, repo_name, file_path, language, chunk, embedding):
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO code_chunks (repo_name,file_path,language,chunk,embedding) VALUES (%s,%s,%s,%s,%s)",
+                (repo_name, file_path, language, chunk, embedding)
+            )
+        self.conn.commit()
+
+    def save_style_rule(self, repo_name, language, category, rule, example=""):
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO style_rules (repo_name,language,category,rule,example) VALUES (%s,%s,%s,%s,%s)",
+                (repo_name, language, category, rule, example)
+            )
+        self.conn.commit()
+
+    def register_repo(self, repo_path, repo_name, languages, file_count):
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO scanned_repos (repo_path,repo_name,languages,file_count)
+                VALUES (%s,%s,%s,%s)
+                ON CONFLICT (repo_path) DO UPDATE SET
+                scanned_at=NOW(), file_count=EXCLUDED.file_count, languages=EXCLUDED.languages
+            """, (repo_path, repo_name, languages, file_count))
+        self.conn.commit()
+
+    def search_similar(self, embedding, language=None, limit=5):
+        with self.conn.cursor() as cur:
+            if language:
+                cur.execute("""
+                    SELECT repo_name,file_path,language,chunk,1-(embedding<=>%s::vector) AS sim
+                    FROM code_chunks WHERE language=%s ORDER BY embedding<=>%s::vector LIMIT %s
+                """, (embedding, language, embedding, limit))
+            else:
+                cur.execute("""
+                    SELECT repo_name,file_path,language,chunk,1-(embedding<=>%s::vector) AS sim
+                    FROM code_chunks ORDER BY embedding<=>%s::vector LIMIT %s
+                """, (embedding, embedding, limit))
+            return cur.fetchall()
+
+    def get_style_rules(self, language=None):
+        with self.conn.cursor() as cur:
+            if language:
+                cur.execute("SELECT category,rule,example FROM style_rules WHERE language=%s ORDER BY category", (language,))
+            else:
+                cur.execute("SELECT category,rule,example FROM style_rules ORDER BY language,category")
+            return cur.fetchall()
+
+    def get_scanned_repos(self):
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT repo_path,repo_name,languages,file_count,scanned_at FROM scanned_repos ORDER BY scanned_at DESC")
+            return cur.fetchall()
+
+    def clear_repo(self, repo_name):
+        with self.conn.cursor() as cur:
+            cur.execute("DELETE FROM code_chunks WHERE repo_name=%s", (repo_name,))
+            cur.execute("DELETE FROM style_rules WHERE repo_name=%s", (repo_name,))
+        self.conn.commit()
+
+    def get_stats(self):
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM code_chunks"); chunks = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM style_rules"); rules = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM scanned_repos"); repos = cur.fetchone()[0]
+        return {"chunks": chunks, "rules": rules, "repos": repos}
+</script>
+
+<script type="text/plain" id="T_file_manager">import os
+
+
+class FileManager:
+    def __init__(self, workspace: str = "%%WS%%"):
+        self.workspace = workspace
+        os.makedirs(workspace, exist_ok=True)
+
+    def list_files(self) -> list[str]:
+        files = []
+        for root, _, filenames in os.walk(self.workspace):
+            for f in filenames:
+                full = os.path.join(root, f)
+                files.append(os.path.relpath(full, self.workspace))
+        return files
+
+    def read_file(self, path: str) -> str:
+        full = os.path.join(self.workspace, path)
+        if not os.path.exists(full):
+            return f"Error: {path} not found"
+        with open(full, "r") as f:
+            return f.read()
+
+    def write_file(self, path: str, content: str) -> str:
+        full = os.path.join(self.workspace, path)
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, "w") as f:
+            f.write(content)
+        return f"Written: {path}"
+
+    def delete_file(self, path: str) -> str:
+        full = os.path.join(self.workspace, path)
+        if not os.path.exists(full):
+            return f"Error: {path} not found"
+        os.remove(full)
+        return f"Deleted: {path}"
+
+    def get_context(self, paths: list[str]) -> str:
+        ctx = ""
+        for p in paths:
+            ctx += f"\n\n--- FILE: {p} ---\n{self.read_file(p)}"
+        return ctx
+</script>
+
+<script type="text/plain" id="T_code_runner">import subprocess, os, tempfile
+
+
+class CodeRunner:
+    def __init__(self, workspace: str = "%%WS%%"):
+        self.workspace = workspace
+
+    def run_file(self, path: str, timeout: int = 30) -> dict:
+        full = os.path.join(self.workspace, path)
+        if not os.path.exists(full):
+            return {"success": False, "output": f"Not found: {path}"}
+        cmds = {".py": ["python", full], ".js": ["node", full],
+                ".dart": ["dart", full], ".sh": ["bash", full]}
+        cmd = cmds.get(os.path.splitext(path)[1])
+        if not cmd:
+            return {"success": False, "output": "Unsupported file type"}
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True,
+                               timeout=timeout, cwd=self.workspace)
+            return {"success": r.returncode == 0,
+                    "output": r.stdout or r.stderr or "No output",
+                    "exit_code": r.returncode}
+        except subprocess.TimeoutExpired:
+            return {"success": False, "output": "Timed out (30s)"}
+        except Exception as e:
+            return {"success": False, "output": str(e)}
+
+    def run_snippet(self, code: str, language: str = "python") -> dict:
+        ext = {"python": ".py", "javascript": ".js", "dart": ".dart"}.get(language, ".py")
+        with tempfile.NamedTemporaryFile(suffix=ext, mode="w", delete=False) as tmp:
+            tmp.write(code); path = tmp.name
+        try:
+            cmd = {"py": ["python", path], ".js": ["node", path]}.get(ext, ["python", path])
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            return {"success": r.returncode == 0, "output": r.stdout or r.stderr or "No output"}
+        except subprocess.TimeoutExpired:
+            return {"success": False, "output": "Timed out"}
+        except Exception as e:
+            return {"success": False, "output": str(e)}
+        finally:
+            os.unlink(path)
+</script>
+
+<script type="text/plain" id="T_scanner">import os, re
+from pathlib import Path
+from embeddings import get_embedding_sync, chunk_code
+from style_memory import StyleMemory
+
+LANGUAGE_MAP = {
+    ".py": "python", ".dart": "dart", ".js": "javascript", ".vue": "vue",
+    ".ts": "typescript", ".cpp": "cpp", ".cc": "cpp", ".c": "c",
+    ".h": "c", ".hpp": "cpp",
+}
+SKIP_DIRS = {".git","node_modules","__pycache__",".dart_tool","build","dist",
+             ".gradle",".idea","venv",".env","ios","android","web",".vscode"}
+MAX_SIZE = 500 * 1024
+
+
+class RepoScanner:
+    def __init__(self):
+        self.memory = StyleMemory()
+
+    def scan(self, repo_path: str, progress_callback=None) -> dict:
+        repo_path = os.path.abspath(repo_path)
+        if not os.path.exists(repo_path):
+            return {"success": False, "error": f"Not found: {repo_path}"}
+        repo_name = os.path.basename(repo_path)
+        files = self._collect(repo_path)
+        if not files:
+            return {"success": False, "error": "No supported files found"}
+        langs = set()
+        done = 0
+        for fp, lang in files:
+            try:
+                with open(fp, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                if not content:
+                    continue
+                langs.add(lang)
+                rel = os.path.relpath(fp, repo_path)
+                for chunk in chunk_code(content):
+                    self.memory.save_chunk(repo_name, rel, lang, chunk, get_embedding_sync(chunk))
+                for rule in self._rules(content, lang, rel):
+                    self.memory.save_style_rule(repo_name, lang,
+                        rule["category"], rule["rule"], rule.get("example", ""))
+                done += 1
+                if progress_callback:
+                    progress_callback(done, len(files), rel)
+            except Exception as e:
+                print(f"Error {fp}: {e}")
+        self.memory.register_repo(repo_path, repo_name, list(langs), done)
+        return {"success": True, "repo_name": repo_name,
+                "files_scanned": done, "languages": list(langs)}
+
+    def _collect(self, root):
+        files = []
+        for r, dirs, names in os.walk(root):
+            dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+            for n in names:
+                ext = Path(n).suffix.lower()
+                if ext in LANGUAGE_MAP:
+                    fp = os.path.join(r, n)
+                    if os.path.getsize(fp) <= MAX_SIZE:
+                        files.append((fp, LANGUAGE_MAP[ext]))
+        return files
+
+    def _rules(self, content, lang, path):
+        rules = []
+        if lang == "python":
+            funcs = re.findall(r'def ([a-z_][a-z0-9_]*)\(', content)
+            if funcs:
+                rules.append({"category": "naming_conventions",
+                               "rule": "Uses snake_case", "example": f"def {funcs[0]}():"})
+            if re.search(r'def \w+\(.*:.*\)\s*->', content):
+                rules.append({"category": "code_patterns", "rule": "Uses type hints"})
+            for lib in re.findall(r'^(?:import|from)\s+(\w+)', content, re.MULTILINE):
+                if lib in {"fastapi","django","flask","httpx","pydantic"}:
+                    rules.append({"category": "libraries", "rule": f"Uses {lib}"})
+        elif lang == "dart":
+            if "StatefulWidget" in content:
+                rules.append({"category": "code_patterns", "rule": "Uses StatefulWidget"})
+            for lib in ["riverpod","provider","bloc","getx"]:
+                if lib in content.lower():
+                    rules.append({"category": "libraries", "rule": f"Uses {lib}"})
+        elif lang in ("javascript","vue","typescript"):
+            if re.search(r'const \w+ = \(.*\) =>', content):
+                rules.append({"category": "code_patterns", "rule": "Prefers arrow functions"})
+            if "defineProps" in content or "setup()" in content:
+                rules.append({"category": "code_patterns", "rule": "Uses Vue 3 Composition API"})
+        elif lang in ("c","cpp"):
+            if "#pragma once" in content:
+                rules.append({"category": "code_patterns", "rule": "Uses #pragma once"})
+        parts = Path(path).parts
+        if len(parts) > 1:
+            rules.append({"category": "file_structure",
+                           "rule": f"Uses {parts[0]}/ folder", "example": path})
+        return rules
+</script>
+
+<script type="text/plain" id="T_agent">import httpx, json
+from embeddings import get_embedding
+from style_memory import StyleMemory
+
+OLLAMA_URL = "http://localhost:11434/api/chat"
+
+
+class CodingAgent:
+    def __init__(self, model: str = "%%CHAT%%"):
+        self.model = model
+        self.history = []
+        self.memory = StyleMemory()
+
+    def reset(self):
+        self.history = []
+
+    async def _style_ctx(self, msg: str, lang=None) -> str:
+        try:
+            emb = await get_embedding(msg)
+            similar = self.memory.search_similar(emb, language=lang, limit=4)
+            rules = self.memory.get_style_rules(language=lang)
+            ctx = ""
+            if rules:
+                ctx += "\n\n## YOUR CODING STYLE:\n"
+                cat = None
+                for c, r, ex in rules[:20]:
+                    if c != cat:
+                        ctx += f"\n### {c.replace('_',' ').title()}:\n"; cat = c
+                    ctx += f"- {r}" + (f" (e.g. `{ex}`)" if ex else "") + "\n"
+            if similar:
+                ctx += "\n\n## SIMILAR CODE FROM YOUR REPOS:\n"
+                for repo, path, l, chunk, sim in similar:
+                    if sim > 0.3:
+                        ctx += f"\n--- {repo}/{path} ---\n{chunk[:500]}\n"
+            return ctx
+        except Exception as e:
+            print(f"Style ctx error: {e}"); return ""
+
+    def _lang(self, msg: str):
+        m = msg.lower()
+        if any(w in m for w in ["python",".py","django","fastapi"]): return "python"
+        if any(w in m for w in ["flutter","dart","widget"]): return "dart"
+        if any(w in m for w in ["vue","javascript","js"]): return "javascript"
+        if any(w in m for w in ["c++","cpp","arduino"]): return "cpp"
+        return None
+
+    async def chat(self, user_msg: str, file_ctx: str = "") -> dict:
+        lang = self._lang(user_msg)
+        style = await self._style_ctx(user_msg, lang)
+        system = ('You are an expert coding assistant. Follow the user coding style.\n'
+                  'Respond ONLY in JSON: {"message":"...","action":"write_file"|"none",'
+                  '"file_path":"...","file_content":"..."}')
+        if style: system += style
+        if file_ctx: system += f"\n\nPROJECT FILES:\n{file_ctx}"
+        self.history.append({"role": "user", "content": user_msg})
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "system", "content": system}, *self.history],
+            "stream": False, "keep_alive": 0,
+            "options": {"temperature": 0.2, "num_ctx": 4096}
+        }
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                r = await client.post(OLLAMA_URL, json=payload)
+                r.raise_for_status()
+                raw = r.json()["message"]["content"]
+            self.history.append({"role": "assistant", "content": raw})
+            try:
+                clean = raw.strip()
+                if clean.startswith("```"):
+                    clean = clean.split("```")[1]
+                    if clean.startswith("json"): clean = clean[4:]
+                return {"success": True, "data": json.loads(clean.strip())}
+            except json.JSONDecodeError:
+                return {"success": True, "data": {"message": raw, "action": "none",
+                                                   "file_path": "", "file_content": ""}}
+        except httpx.TimeoutException:
+            return {"success": False, "error": "Timed out"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+</script>
+
+<script type="text/plain" id="T_main_py">from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from agent import CodingAgent
+from file_manager import FileManager
+from code_runner import CodeRunner
+from scanner import RepoScanner
+from style_memory import StyleMemory
+
+app = FastAPI(title="Coding Agent")
+app.add_middleware(CORSMiddleware, allow_origins=["*"],
+                   allow_methods=["*"], allow_headers=["*"])
+
+agent = CodingAgent()
+fm = FileManager()
+cr = CodeRunner()
+sc = RepoScanner()
+mem = StyleMemory()
+scan_st = {"running": False, "progress": 0, "total": 0, "current_file": "", "done": False}
+
+
+class ChatReq(BaseModel):
+    message: str
+    context_files: list[str] = []
+
+class WriteReq(BaseModel):
+    path: str; content: str
+
+class RunReq(BaseModel):
+    path: str
+
+class SnipReq(BaseModel):
+    code: str; language: str = "python"
+
+class ScanReq(BaseModel):
+    path: str
+
+
+@app.post("/chat")
+async def chat(req: ChatReq):
+    ctx = fm.get_context(req.context_files) if req.context_files else ""
+    res = await agent.chat(req.message, ctx)
+    if not res["success"]: raise HTTPException(500, res["error"])
+    data = res["data"]
+    if data.get("action") == "write_file" and data.get("file_path"):
+        fm.write_file(data["file_path"], data["file_content"])
+    return {"message": data.get("message",""), "action": data.get("action","none"),
+            "file_path": data.get("file_path",""), "files": fm.list_files()}
+
+@app.post("/reset")
+def reset(): agent.reset(); return {"ok": True}
+
+@app.get("/files")
+def ls(): return {"files": fm.list_files()}
+
+@app.get("/files/{path:path}")
+def read(path: str): return {"content": fm.read_file(path)}
+
+@app.post("/files")
+def write(req: WriteReq):
+    return {"message": fm.write_file(req.path, req.content), "files": fm.list_files()}
+
+@app.delete("/files/{path:path}")
+def delete(path: str):
+    return {"message": fm.delete_file(path), "files": fm.list_files()}
+
+@app.post("/run/file")
+def run_file(req: RunReq): return cr.run_file(req.path)
+
+@app.post("/run/snippet")
+def run_snip(req: SnipReq): return cr.run_snippet(req.code, req.language)
+
+@app.post("/scan")
+async def scan(req: ScanReq, bg: BackgroundTasks):
+    if scan_st["running"]: raise HTTPException(400, "Already scanning")
+    def do():
+        scan_st.update({"running":True,"progress":0,"total":0,"current_file":"","done":False})
+        r = sc.scan(req.path, lambda p,t,c: scan_st.update({"progress":p,"total":t,"current_file":c}))
+        scan_st.update({"running":False,"done":True,"result":r})
+    bg.add_task(do); return {"message": "Scan started"}
+
+@app.get("/scan/status")
+def scan_status(): return scan_st
+
+@app.get("/scan/repos")
+def repos():
+    return {"repos": [{"path":r[0],"name":r[1],"languages":r[2],
+                        "file_count":r[3],"scanned_at":str(r[4])}
+                       for r in mem.get_scanned_repos()]}
+
+@app.get("/scan/stats")
+def stats(): return mem.get_stats()
+
+@app.delete("/scan/repos/{name}")
+def del_repo(name: str): mem.clear_repo(name); return {"ok": True}
+
+@app.get("/health")
+def health(): return {"status": "ok", "model": agent.model}
+</script>
+
+<script type="text/plain" id="T_pkg_json">{
+  "name": "coding-agent-frontend",
+  "version": "1.0.0",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "dependencies": { "vue": "^3.4.0", "axios": "^1.6.0" },
+  "devDependencies": { "@vitejs/plugin-vue": "^5.0.0", "vite": "^5.0.0" }
+}
+</script>
+
+<script type="text/plain" id="T_index_html"><!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Coding Agent</title>
+    <style>* { margin:0;padding:0;box-sizing:border-box; } body { background:#121212;color:#fff;height:100vh;overflow:hidden; } #app { height:100vh; }</style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js">SCRIPT_CLOSE
+  </body>
+</html>
+</script>
+
+<script type="text/plain" id="T_main_js">import { createApp } from 'vue'
+import App from './App.vue'
+createApp(App).mount('#app')
+</script>
+
+<script type="text/plain" id="T_api_js">import axios from 'axios'
+
+const api = axios.create({ baseURL: 'http://localhost:%%PORT%%' })
+
+export const chatWithAgent = (message, contextFiles = []) =>
+  api.post('/chat', { message, context_files: contextFiles }).then(r => r.data)
+
+export const getFiles = () => api.get('/files').then(r => r.data.files)
+export const readFile = (path) => api.get(`/files/${path}`).then(r => r.data.content)
+export const writeFile = (path, content) => api.post('/files', { path, content })
+export const deleteFile = (path) => api.delete(`/files/${path}`)
+export const runFile = (path) => api.post('/run/file', { path }).then(r => r.data)
+export const runSnippet = (code, language = 'python') =>
+  api.post('/run/snippet', { code, language }).then(r => r.data)
+export const resetChat = () => api.post('/reset')
+</script>
+
+<script type="text/plain" id="T_App_vue"><template>
+  <div class="app">
+    <div class="sidebar">
+      <div class="sidebar-header">🤖 Coding Agent</div>
+      <div class="sidebar-tabs">
+        <button :class="{ active: tab === 'files' }" @click="tab = 'files'">📁 Files</button>
+        <button :class="{ active: tab === 'memory' }" @click="tab = 'memory'">🧠 Memory</button>
+      </div>
+      <div class="sidebar-content">
+        <FileExplorer v-if="tab === 'files'" @context-changed="ctx = $event" />
+        <StyleMemory v-else />
+      </div>
+    </div>
+    <div class="main"><ChatPanel :context-files="ctx" /></div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import ChatPanel from './components/ChatPanel.vue'
+import FileExplorer from './components/FileExplorer.vue'
+import StyleMemory from './components/StyleMemory.vue'
+
+const ctx = ref([])
+const tab = ref('files')
+SCRIPT_CLOSE
+
+<style>
+.app { display:flex;height:100vh;overflow:hidden; }
+.sidebar { width:300px;min-width:300px;background:#1a1a1a;border-right:1px solid #333;display:flex;flex-direction:column; }
+.sidebar-header { padding:16px;font-size:18px;font-weight:bold;border-bottom:1px solid #333; }
+.sidebar-tabs { display:flex;border-bottom:1px solid #333; }
+.sidebar-tabs button { flex:1;padding:8px;background:none;border:none;color:#666;cursor:pointer;font-size:12px; }
+.sidebar-tabs button.active { color:#fff;background:#2d2d2d;border-bottom:2px solid #1565c0; }
+.sidebar-content { flex:1;overflow-y:auto; }
+.main { flex:1;overflow:hidden;display:flex;flex-direction:column; }
+</style>
+</script>
+
+<script type="text/plain" id="T_ChatPanel_vue"><template>
+  <div class="chat-panel">
+    <div class="chat-header">
+      <span v-if="contextFiles.length" style="color:#ffa726">📎 {{ contextFiles.length }} file(s) in context</span>
+      <span v-else style="color:#555">No context files selected</span>
+      <button @click="resetChat">🔄 Reset</button>
+    </div>
+    <div class="messages" ref="msgsEl">
+      <div v-if="!messages.length" class="welcome">
+        <p>👋 Hi! I am your Coding Agent.</p>
+        <p>Ask me to write, edit, or explain code!</p>
+      </div>
+      <MessageBubble v-for="(m, i) in messages" :key="i" :message="m" />
+      <div v-if="loading" class="loading">
+        <span class="dot" /><span class="dot" /><span class="dot" />
+      </div>
+    </div>
+    <div class="input-area">
+      <textarea v-model="input" placeholder="Ask the agent..."
+        @keydown.enter.exact.prevent="send" rows="2" />
+      <button :disabled="loading || !input.trim()" @click="send">➤</button>
+    </div>
+    <p class="hint">Enter to send · Shift+Enter for new line</p>
+  </div>
+</template>
+
+<script setup>
+import { ref, nextTick } from 'vue'
+import MessageBubble from './MessageBubble.vue'
+import * as api from '../services/api'
+
+const props = defineProps({ contextFiles: Array })
+const input = ref(''), messages = ref([]), loading = ref(false), msgsEl = ref(null)
+
+async function send() {
+  const t = input.value.trim()
+  if (!t || loading.value) return
+  messages.value.push({ role: 'user', content: t })
+  input.value = ''; loading.value = true; await scroll()
+  try {
+    const r = await api.chatWithAgent(t, props.contextFiles)
+    messages.value.push({ role: 'assistant', content: r.message, filePath: r.file_path || null })
+  } catch (e) {
+    messages.value.push({ role: 'assistant', content: `Error: ${e.message}` })
+  } finally { loading.value = false; await scroll() }
+}
+
+async function resetChat() { await api.resetChat(); messages.value = [] }
+async function scroll() {
+  await nextTick()
+  if (msgsEl.value) msgsEl.value.scrollTop = msgsEl.value.scrollHeight
+}
+SCRIPT_CLOSE
+
+<style scoped>
+.chat-panel { display:flex;flex-direction:column;height:100%;background:#121212; }
+.chat-header { display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#1e1e1e;border-bottom:1px solid #333;font-size:12px; }
+.chat-header button { background:#2a2a2a;border:1px solid #444;color:#ccc;padding:4px 10px;border-radius:6px;cursor:pointer; }
+.messages { flex:1;overflow-y:auto;padding:16px; }
+.welcome { text-align:center;color:#555;margin-top:60px;line-height:2;font-size:14px; }
+.loading { display:flex;gap:6px;padding:8px 0; }
+.dot { width:8px;height:8px;background:#555;border-radius:50%;animation:bounce 1.2s infinite; }
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(.8);opacity:.4}40%{transform:scale(1.2);opacity:1}}
+.input-area { display:flex;gap:8px;padding:12px 16px 4px;background:#1e1e1e;border-top:1px solid #333; }
+textarea { flex:1;background:#2a2a2a;border:1px solid #444;border-radius:10px;color:#fff;padding:10px 14px;font-size:14px;resize:none;outline:none;font-family:inherit; }
+textarea:focus { border-color:#1565c0; }
+button { background:#1565c0;border:none;color:#fff;padding:0 16px;border-radius:10px;cursor:pointer;font-size:18px; }
+button:disabled { opacity:.4;cursor:not-allowed; }
+.hint { text-align:center;font-size:10px;color:#444;padding:4px 0 8px;background:#1e1e1e; }
+</style>
+</script>
+
+<script type="text/plain" id="T_MessageBubble_vue"><template>
+  <div class="wrap" :class="isUser ? 'user' : 'agent'">
+    <div class="bubble" :class="isUser ? 'b-user' : 'b-agent'">
+      <p class="content">{{ message.content }}</p>
+      <p v-if="message.filePath" class="ftag">📄 Created: {{ message.filePath }}</p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+const props = defineProps({ message: Object })
+const isUser = props.message.role === 'user'
+SCRIPT_CLOSE
+
+<style scoped>
+.wrap { display:flex;margin-bottom:12px; }
+.wrap.user { justify-content:flex-end; }
+.bubble { max-width:75%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.5; }
+.b-user { background:#1565c0;color:#fff;border-bottom-right-radius:4px; }
+.b-agent { background:#2d2d2d;color:#e0e0e0;border-bottom-left-radius:4px; }
+.content { white-space:pre-wrap;word-break:break-word; }
+.ftag { margin-top:6px;font-size:11px;color:#4ec9b0; }
+</style>
+</script>
+
+<script type="text/plain" id="T_FileExplorer_vue"><template>
+  <div class="explorer">
+    <div class="file-list">
+      <div v-if="!files.length" class="empty">No files yet. Ask AI to create some!</div>
+      <div v-for="f in files" :key="f" class="file-item">
+        <label class="file-check">
+          <input type="checkbox" :checked="sel.includes(f)" @change="toggle(f)" />
+          <span class="fname">{{ f }}</span>
+        </label>
+        <div class="actions">
+          <button @click="view(f)" title="View">👁</button>
+          <button @click="run(f)" title="Run">▶</button>
+          <button @click="del(f)" title="Delete">🗑</button>
+        </div>
+      </div>
+    </div>
+    <div v-if="viewFile" class="viewer">
+      <div class="vh"><span>{{ viewFile }}</span><button @click="viewFile = null">✕</button></div>
+      <pre>{{ viewContent }}</pre>
+    </div>
+    <div v-if="output" class="run-out">
+      <div class="vh">
+        <span>{{ ok ? '✅ Output' : '❌ Error' }}</span>
+        <button @click="output = null">✕</button>
+      </div>
+      <pre>{{ output }}</pre>
+    </div>
+    <button class="refresh-btn" @click="load">🔄 Refresh Files</button>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import * as api from '../services/api'
+
+const emit = defineEmits(['context-changed'])
+const files = ref([]), sel = ref([]), viewFile = ref(null),
+      viewContent = ref(''), output = ref(null), ok = ref(false)
+
+onMounted(load)
+async function load() { files.value = await api.getFiles() }
+async function view(f) { viewFile.value = f; viewContent.value = await api.readFile(f) }
+async function run(f) { const r = await api.runFile(f); ok.value = r.success; output.value = r.output }
+async function del(f) { await api.deleteFile(f); if (viewFile.value === f) viewFile.value = null; await load() }
+function toggle(f) {
+  sel.value = sel.value.includes(f) ? sel.value.filter(x => x !== f) : [...sel.value, f]
+  emit('context-changed', sel.value)
+}
+SCRIPT_CLOSE
+
+<style scoped>
+.explorer { display:flex;flex-direction:column;flex:1;overflow:hidden; }
+.file-list { flex:1;overflow-y:auto;padding:8px; }
+.empty { color:#666;text-align:center;padding:32px 16px;font-size:13px; }
+.file-item { display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:6px;margin-bottom:4px; }
+.file-item:hover { background:#2a2a2a; }
+.file-check { display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;min-width:0; }
+.fname { font-size:12px;font-family:monospace;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.actions { display:flex;gap:2px; }
+.actions button { background:none;border:none;cursor:pointer;padding:2px 4px;font-size:13px;opacity:.6; }
+.actions button:hover { opacity:1;background:#3a3a3a;border-radius:4px; }
+.viewer,.run-out { border-top:1px solid #333;max-height:180px;overflow:hidden;display:flex;flex-direction:column; }
+.vh { display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#2a2a2a;font-size:11px;color:#aaa; }
+.vh button { background:none;border:none;color:#aaa;cursor:pointer; }
+pre { flex:1;overflow-y:auto;padding:10px;font-size:11px;font-family:monospace;color:#4ec9b0;background:#1a1a1a;white-space:pre-wrap;word-break:break-all; }
+.run-out pre { color:#ce9178; }
+.refresh-btn { margin:8px;padding:8px;background:#2a2a2a;border:1px solid #444;border-radius:8px;color:#ccc;cursor:pointer;font-size:13px; }
+</style>
+</script>
+
+<script type="text/plain" id="T_StyleMemory_vue"><template>
+  <div class="memory">
+    <h3>🧠 Style Memory</h3>
+    <div class="stats" v-if="stats">
+      <div class="s"><span>{{ stats.repos }}</span>Repos</div>
+      <div class="s"><span>{{ stats.chunks }}</span>Chunks</div>
+      <div class="s"><span>{{ stats.rules }}</span>Rules</div>
+    </div>
+    <div class="scan-wrap">
+      <p class="lbl">Scan a repo or folder:</p>
+      <input v-model="scanPath" placeholder="e.g. C:/Users/you/projects/myrepo" />
+      <button :disabled="scanning || !scanPath.trim()" @click="startScan">
+        {{ scanning ? '⏳ Scanning...' : '🔍 Scan' }}
+      </button>
+      <div v-if="scanning" class="prog">
+        <div class="bar"><div class="fill" :style="{ width: pct + '%' }" /></div>
+        <p>{{ status.progress }}/{{ status.total }}</p>
+      </div>
+      <p v-if="done" style="color:#34d399;font-size:12px;margin-top:8px">✅ Scan complete!</p>
+    </div>
+    <div class="repos">
+      <p class="lbl">Scanned repos:</p>
+      <div v-if="!repos.length" class="empty">No repos scanned yet</div>
+      <div v-for="r in repos" :key="r.path" class="repo-item">
+        <div><b>{{ r.name }}</b><small>{{ r.file_count }} files</small></div>
+        <button @click="del(r.name)">🗑</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import axios from 'axios'
+
+const BASE = 'http://localhost:%%PORT%%'
+const scanPath = ref(''), scanning = ref(false), done = ref(false)
+const status = ref({ progress: 0, total: 0, current_file: '' })
+const repos = ref([]), stats = ref(null)
+let poll = null
+
+onMounted(() => { load(); loadStats() })
+onUnmounted(() => { if (poll) clearInterval(poll) })
+
+async function load() { repos.value = (await axios.get(`${BASE}/scan/repos`)).data.repos }
+async function loadStats() { stats.value = (await axios.get(`${BASE}/scan/stats`)).data }
+
+async function startScan() {
+  scanning.value = true; done.value = false
+  await axios.post(`${BASE}/scan`, { path: scanPath.value })
+  poll = setInterval(async () => {
+    const r = (await axios.get(`${BASE}/scan/status`)).data
+    status.value = r
+    if (!r.running && r.done) {
+      clearInterval(poll); scanning.value = false; done.value = true
+      load(); loadStats()
+    }
+  }, 1000)
+}
+
+async function del(name) { await axios.delete(`${BASE}/scan/repos/${name}`); load(); loadStats() }
+
+const pct = computed(() =>
+  status.value.total ? Math.round(status.value.progress / status.value.total * 100) : 0
+)
+SCRIPT_CLOSE
+
+<style scoped>
+.memory { padding:12px;display:flex;flex-direction:column;gap:12px;font-size:13px; }
+h3 { color:#fff; }
+.stats { display:flex;gap:8px; }
+.s { flex:1;background:#2a2a2a;border-radius:8px;padding:8px;text-align:center;font-size:11px;color:#666; }
+.s span { display:block;font-size:20px;font-weight:bold;color:#a78bfa; }
+.lbl { font-size:11px;color:#666;margin-bottom:6px; }
+input { width:100%;background:#2a2a2a;border:1px solid #444;border-radius:8px;color:#fff;padding:8px;font-size:12px;margin-bottom:6px;outline:none; }
+button { width:100%;padding:8px;background:#1565c0;border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:13px; }
+button:disabled { opacity:.4;cursor:not-allowed; }
+.prog { margin-top:8px; }
+.bar { height:4px;background:#333;border-radius:4px;overflow:hidden; }
+.fill { height:100%;background:#1565c0;transition:width .3s; }
+.prog p { font-size:10px;color:#666;margin-top:4px; }
+.empty { font-size:12px;color:#555; }
+.repo-item { display:flex;align-items:center;justify-content:space-between;background:#2a2a2a;border-radius:8px;padding:8px 10px;margin-bottom:6px; }
+.repo-item small { display:block;font-size:10px;color:#666; }
+.repo-item button { width:auto;padding:4px 8px;background:none;font-size:14px;opacity:.5; }
+.repo-item button:hover { opacity:1; }
+</style>
+</script>
+
+<script type="text/plain" id="T_readme"># Coding Agent on Ollama
+
+A fully local AI coding agent with RAG-based style memory.
+
+## Quick Start
+
+```bash
+# 1. Setup PostgreSQL
+psql -U %%USER%% -c "CREATE DATABASE %%DB%%;"
+
+# 2. Pull Ollama models
+ollama pull %%CHAT%%
+ollama pull %%EMBED%%
+
+# 3. Start backend
+cd backend
+cp .env.example .env   # edit DB_PASSWORD
+pip install -r requirements.txt
+uvicorn main:app --reload --port %%PORT%%
+
+# 4. Start frontend
+cd frontend
+npm install
+npm run dev
+```
+
+## Features
+- Chat with AI agent about your code
+- AI writes and edits files automatically
+- Run code and see output
+- RAG style memory: scans repos, learns your coding style
+- keep_alive=0: models unload from RAM/VRAM immediately after generation
+
+## Models
+- Chat: `%%CHAT%%`
+- Embeddings: `%%EMBED%%`
+
+## Hardware Notes
+Optimized for: i5-3470, GTX 1060 3GB, 12GB RAM.
+keep_alive=0 keeps VRAM free between requests.
+</script>
+
+<!-- ═══════════════════
+     UI
+     ═══════════════════ -->
+<div class="container">
+  <div class="header">
+    <div class="badge">🤖 Project Generator</div>
+    <h1>Coding Agent<br/>on Ollama</h1>
+    <p class="subtitle">Configure &amp; download your complete project as a .zip</p>
+  </div>
+
+  <div class="section">
+    <div class="stitle"><em>1</em> Select Components</div>
+    <div class="grid" id="components">
+      <label class="ci on" onclick="toggleCheck(this)"><div class="cb"></div><span class="cl">FastAPI Backend</span><span class="ct">core</span></label>
+      <label class="ci on" onclick="toggleCheck(this)"><div class="cb"></div><span class="cl">Vue.js Frontend</span><span class="ct">ui</span></label>
+      <label class="ci on" onclick="toggleCheck(this)"><div class="cb"></div><span class="cl">Style Memory (RAG)</span><span class="ct">ai</span></label>
+      <label class="ci on" onclick="toggleCheck(this)"><div class="cb"></div><span class="cl">Repo Scanner</span><span class="ct">ai</span></label>
+      <label class="ci on" onclick="toggleCheck(this)"><div class="cb"></div><span class="cl">Code Runner</span><span class="ct">exec</span></label>
+      <label class="ci on" onclick="toggleCheck(this)"><div class="cb"></div><span class="cl">File Manager</span><span class="ct">fs</span></label>
+      <label class="ci" onclick="toggleCheck(this)"><div class="cb"></div><span class="cl">Flutter Frontend</span><span class="ct">mobile</span></label>
+      <label class="ci" onclick="toggleCheck(this)"><div class="cb"></div><span class="cl">Django OAuth</span><span class="ct">auth</span></label>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="stitle"><em>2</em> Configuration</div>
+    <div class="row2">
+      <div class="field">
+        <label>Chat Model</label>
+        <select id="chatModel" onchange="updatePreview()">
+          <option value="qwen2.5-coder:1.5b">qwen2.5-coder:1.5b (recommended)</option>
+          <option value="deepseek-coder:1.3b">deepseek-coder:1.3b</option>
+          <option value="phi3:mini">phi3:mini</option>
+          <option value="qwen2.5-coder:3b">qwen2.5-coder:3b</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Embed Model</label>
+        <select id="embedModel" onchange="updatePreview()">
+          <option value="nomic-embed-text">nomic-embed-text (recommended)</option>
+          <option value="mxbai-embed-large">mxbai-embed-large</option>
+        </select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Backend Port</label><input id="port" value="8000" oninput="updatePreview()"/></div>
+      <div class="field"><label>DB Name</label><input id="dbName" value="coding_agent" oninput="updatePreview()"/></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>DB User</label><input id="dbUser" value="postgres" oninput="updatePreview()"/></div>
+      <div class="field"><label>Workspace Folder</label><input id="ws" value="./workspace" oninput="updatePreview()"/></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="stitle"><em>3</em> File Preview</div>
+    <div class="tree" id="treePreview"></div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="section">
+    <div class="stitle"><em>4</em> Generate</div>
+    <button class="btn" id="genBtn" onclick="generate()">⚡ Generate &amp; Download ZIP</button>
+    <div class="pw" id="pw">
+      <div class="pbg"><div class="pf" id="pf"></div></div>
+      <div class="pl" id="pl">Generating...</div>
+    </div>
+    <div class="sc" id="sc">
+      <div class="si">✅</div>
+      <div class="st">ZIP Ready!</div>
+      <div class="ss" id="ss"></div>
+      <button class="dl" id="dlBtn">⬇ Download ZIP</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+function cfg() {
+  return {
+    CHAT: document.getElementById('chatModel').value,
+    EMBED: document.getElementById('embedModel').value,
+    PORT: document.getElementById('port').value || '8000',
+    DB: document.getElementById('dbName').value || 'coding_agent',
+    USER: document.getElementById('dbUser').value || 'postgres',
+    WS: document.getElementById('ws').value || './workspace',
+  };
+}
+
+// Read a text/plain template and substitute %%KEY%% placeholders
+function tpl(id) {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  const c = cfg();
+  let text = el.textContent;
+  // Fix the script close placeholder we used to avoid premature tag closing
+  text = text.replace(/SCRIPT_CLOSE/g, '<\/script>');
+  return text
+    .replace(/%%CHAT%%/g, c.CHAT)
+    .replace(/%%EMBED%%/g, c.EMBED)
+    .replace(/%%PORT%%/g, c.PORT)
+    .replace(/%%DB%%/g, c.DB)
+    .replace(/%%USER%%/g, c.USER)
+    .replace(/%%WS%%/g, c.WS);
+}
+
+function isOn(label) {
+  for (const el of document.querySelectorAll('#components .ci')) {
+    if (el.querySelector('.cl').textContent.trim() === label)
+      return el.classList.contains('on');
+  }
+  return false;
+}
+
+function toggleCheck(el) {
+  el.classList.toggle('on');
+  updatePreview();
+}
+
+// ── File manifest ─────────────────────────────────────────────────────────────
+function manifest() {
+  const files = [];
+  const add = (name, id, content) => files.push({ name, id, content });
+  const dir = (name) => files.push({ name, dir: true });
+
+  if (isOn('FastAPI Backend')) {
+    dir('backend/');
+    add('backend/main.py', 'T_main_py');
+    add('backend/agent.py', 'T_agent');
+    add('backend/requirements.txt', 'T_requirements');
+    add('backend/.env.example', 'T_env');
+    if (isOn('File Manager')) add('backend/file_manager.py', 'T_file_manager');
+    if (isOn('Code Runner')) add('backend/code_runner.py', 'T_code_runner');
+    if (isOn('Style Memory (RAG)')) {
+      add('backend/style_memory.py', 'T_style_memory');
+      add('backend/embeddings.py', 'T_embeddings');
+    }
+    if (isOn('Repo Scanner')) add('backend/scanner.py', 'T_scanner');
+  }
+
+  if (isOn('Vue.js Frontend')) {
+    dir('frontend/');
+    add('frontend/package.json', 'T_pkg_json');
+    add('frontend/index.html', 'T_index_html');
+    dir('frontend/src/');
+    add('frontend/src/main.js', 'T_main_js');
+    add('frontend/src/App.vue', 'T_App_vue');
+    dir('frontend/src/services/');
+    add('frontend/src/services/api.js', 'T_api_js');
+    dir('frontend/src/components/');
+    add('frontend/src/components/ChatPanel.vue', 'T_ChatPanel_vue');
+    add('frontend/src/components/MessageBubble.vue', 'T_MessageBubble_vue');
+    add('frontend/src/components/FileExplorer.vue', 'T_FileExplorer_vue');
+    if (isOn('Style Memory (RAG)'))
+      add('frontend/src/components/StyleMemory.vue', 'T_StyleMemory_vue');
+  }
+
+  if (isOn('Flutter Frontend')) {
+    dir('flutter_app/');
+    flutterFiles().forEach(f => files.push(f));
+  }
+
+  if (isOn('Django OAuth')) {
+    dir('django_oauth/');
+    djangoFiles().forEach(f => files.push(f));
+  }
+
+  add('README.md', 'T_readme');
+  return files;
+}
+
+// ── Flutter files (inline, safe strings) ─────────────────────────────────────
+function flutterFiles() {
+  const p = cfg().PORT;
+  return [
+    { name: 'flutter_app/pubspec.yaml', content: 'name: coding_agent\ndescription: Flutter Coding Agent\nenvironment:\n  sdk: ">=3.0.0 <4.0.0"\ndependencies:\n  flutter:\n    sdk: flutter\n  http: ^1.2.1\n  flutter_secure_storage: ^9.0.0\nflutter:\n  uses-material-design: true' },
+    { name: 'flutter_app/lib/main.dart', content: "import 'package:flutter/material.dart';\nimport 'screens/chat_screen.dart';\nvoid main() { runApp(const MyApp()); }\nclass MyApp extends StatelessWidget {\n  const MyApp({super.key});\n  @override Widget build(BuildContext context) {\n    return MaterialApp(title: 'Coding Agent', home: const ChatScreen());\n  }\n}" },
+    { name: 'flutter_app/lib/models/message.dart', content: "class Message {\n  final String role, content;\n  final String? filePath;\n  Message({required this.role, required this.content, this.filePath});\n}" },
+    { name: 'flutter_app/lib/services/api_service.dart', content: "import 'dart:convert';\nimport 'package:http/http.dart' as http;\nclass ApiService {\n  static const String baseUrl = 'http://10.0.2.2:" + p + "';\n  static Future<Map<String,dynamic>> chat({required String message}) async {\n    final res = await http.post(Uri.parse('$baseUrl/chat'),\n      headers: {'Content-Type':'application/json'},\n      body: '{\"message\":\"$message\"}');\n    if (res.statusCode == 200) return {}; // parse as needed\n    throw Exception('Chat failed');\n  }\n}" },
+    { name: 'flutter_app/lib/screens/chat_screen.dart', content: "import 'package:flutter/material.dart';\nclass ChatScreen extends StatefulWidget {\n  const ChatScreen({super.key});\n  @override State createState() => _S();\n}\nclass _S extends State<ChatScreen> {\n  final _ctrl = TextEditingController();\n  @override Widget build(BuildContext ctx) {\n    return Scaffold(\n      appBar: AppBar(title: const Text('Coding Agent')),\n      body: Column(children: [\n        Expanded(child: Container()),\n        TextField(controller: _ctrl, decoration: const InputDecoration(hintText: 'Ask...')),\n      ]),\n    );\n  }\n}" },
+  ];
+}
+
+// ── Django files (inline, safe strings) ──────────────────────────────────────
+function djangoFiles() {
+  return [
+    { name: 'django_oauth/requirements.txt', content: 'django\ndjangorestframework\ndjango-allauth\ndj-rest-auth\ndjangorestframework-simplejwt\npython-dotenv' },
+    { name: 'django_oauth/manage.py', content: "import os, sys\ndef main():\n    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')\n    from django.core.management import execute_from_command_line\n    execute_from_command_line(sys.argv)\nif __name__ == '__main__':\n    main()" },
+    { name: 'django_oauth/myproject/__init__.py', content: '' },
+    { name: 'django_oauth/myproject/urls.py', content: "from django.contrib import admin\nfrom django.urls import path, include\nurlpatterns = [path('admin/', admin.site.urls), path('accounts/', include('accounts.urls'))]" },
+    { name: 'django_oauth/accounts/__init__.py', content: '' },
+    { name: 'django_oauth/accounts/models.py', content: "from django.db import models\nclass UserProfile(models.Model):\n    email = models.EmailField(unique=True)\n    name = models.CharField(max_length=255)\n    created_at = models.DateTimeField(auto_now_add=True)" },
+    { name: 'django_oauth/accounts/serializers.py', content: "from rest_framework import serializers\nfrom .models import UserProfile\nclass UserProfileSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = UserProfile\n        fields = ['id', 'email', 'name', 'created_at']" },
+    { name: 'django_oauth/accounts/views.py', content: "from rest_framework.views import APIView\nfrom rest_framework.response import Response\nfrom rest_framework.permissions import IsAuthenticated\nfrom .models import UserProfile\nfrom .serializers import UserProfileSerializer\nclass UserProfileView(APIView):\n    permission_classes = [IsAuthenticated]\n    def get(self, request):\n        try:\n            p = UserProfile.objects.get(email=request.user.email)\n            return Response(UserProfileSerializer(p).data)\n        except UserProfile.DoesNotExist:\n            return Response({'error': 'Not found'}, status=404)" },
+    { name: 'django_oauth/accounts/urls.py', content: "from django.urls import path\nfrom .views import UserProfileView\nurlpatterns = [path('profile/', UserProfileView.as_view())]" },
+  ];
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────────
+function icon(name) {
+  if (name.endsWith('.py')) return '🐍';
+  if (name.endsWith('.vue')) return '💚';
+  if (name.endsWith('.js')) return '🟨';
+  if (name.endsWith('.dart')) return '🎯';
+  if (name.endsWith('.md')) return '📝';
+  if (name.endsWith('.yaml') || name.endsWith('.yml')) return '⚙️';
+  if (name.endsWith('.json')) return '📋';
+  if (name.includes('.env')) return '🔐';
+  return '📄';
+}
+
+function updatePreview() {
+  const files = manifest();
+  const tree = document.getElementById('treePreview');
+  tree.innerHTML = files.map(f => {
+    const parts = f.name.split('/').filter(Boolean);
+    const depth = parts.length - (f.dir ? 1 : 0);
+    const label = parts.pop() + (f.dir ? '/' : '');
+    const ic = f.dir ? '📁' : icon(f.name);
+    return `<div class="ti ${f.dir ? 'd' : 'f'}" style="padding-left:${depth * 14}px">
+      <span style="width:16px;text-align:center;flex-shrink:0">${ic}</span>${label}
+    </div>`;
+  }).join('');
+  const fc = files.filter(f => !f.dir).length;
+  document.getElementById('chips').innerHTML =
+    `<div class="chip">Files: <b>${fc}</b></div><div class="chip">Total: <b>${files.length}</b></div>`;
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+function setP(pct, label) {
+  document.getElementById('pf').style.width = pct + '%';
+  document.getElementById('pl').textContent = label;
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+let zipBlob = null;
+
+async function generate() {
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  document.getElementById('sc').classList.remove('on');
+  document.getElementById('pw').classList.add('on');
+  setP(5, 'Initializing...'); await sleep(80);
+
+  const zip = new JSZip();
+  const files = manifest().filter(f => !f.dir);
+  const total = files.length;
+  let done = 0;
+
+  for (const file of files) {
+    const content = file.id ? tpl(file.id) : (file.content || '');
+    zip.file(file.name, content);
+    done++;
+    setP(Math.round((done / total) * 88) + 5, `Adding ${file.name.split('/').pop()}...`);
+    await sleep(20);
+  }
+
+  setP(97, 'Compressing...'); await sleep(80);
+  zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+  setP(100, 'Done!'); await sleep(150);
+
+  document.getElementById('pw').classList.remove('on');
+  document.getElementById('sc').classList.add('on');
+  document.getElementById('ss').textContent =
+    `${total} files · ${(zipBlob.size / 1024).toFixed(1)} KB · Extract and follow the README`;
+
+  document.getElementById('dlBtn').onclick = () => {
+    const url = URL.createObjectURL(zipBlob);
+    const a = Object.assign(document.createElement('a'),
+      { href: url, download: 'coding-agent-on-ollama.zip' });
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  btn.disabled = false;
+}
+
+updatePreview();
+</script>
+</body>
+</html>
